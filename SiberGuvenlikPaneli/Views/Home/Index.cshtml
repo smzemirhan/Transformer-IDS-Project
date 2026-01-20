@@ -1,0 +1,151 @@
+﻿@model SiberGuvenlikPaneli.Models.TrafficData
+
+@{
+    ViewData["Title"] = "AI Güvenlik Paneli";
+}
+
+<div class="container mt-4">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-primary">🛡️ Yapay Zeka Destekli Saldırı Tespit Sistemi</h2>
+        <p class="text-muted">Ağ trafiği verilerini girin ve yapay zekanın analiz etmesini bekleyin.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">📡 Ağ Trafiği Simülasyonu</h5>
+                </div>
+                <div class="card-body bg-light">
+                    <form asp-action="Analyze" method="post">
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Protokol</label>
+                                <select asp-for="Proto" class="form-select">
+                                    <option value="tcp">TCP</option>
+                                    <option value="udp">UDP</option>
+                                    <option value="icmp">ICMP</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Servis</label>
+                                <input asp-for="Service" class="form-control" placeholder="Örn: http, ssh, dns" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Bağlantı Durumu (State)</label>
+                                <input asp-for="ConnState" class="form-control" placeholder="Örn: SF, S0, RSTR" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Süre (Duration)</label>
+                                <input asp-for="Duration" type="text" class="form-control" placeholder="0.5" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Giden Paket (Orig Pkts)</label>
+                                <input asp-for="OrigPkts" type="number" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Giden Bayt (Orig Bytes)</label>
+                                <input asp-for="OrigIpBytes" type="number" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Gelen Paket (Resp Pkts)</label>
+                                <input asp-for="RespPkts" type="number" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Gelen Bayt (Resp Bytes)</label>
+                                <input asp-for="RespIpBytes" type="number" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Bağlantı Geçmişi (History)</label>
+                                <input asp-for="History" class="form-control" placeholder="Örn: ShADadFf" />
+                                <small class="text-muted">Normal trafik için 'ShADadFf', Saldırı için 'S' veya 'D' deneyin.</small>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-sm">
+                             TRAFİĞİ ANALİZ ET
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+
+            @if (Model.IsAnalyzed)
+            {
+                <div class="alert @Model.ColorClass text-center shadow-lg border-0" role="alert" style="min-height: 250px; display: flex; flex-direction: column; justify-content: center;">
+
+                    <div class="mb-3" style="font-size: 3rem;">
+                        @(Model.Status == "GÜVENLİ" ? "🛡️" : "🚨")
+                    </div>
+
+                    <h2 class="alert-heading fw-bold text-uppercase">@Model.Status</h2>
+                    <hr>
+                    <h5 class="mb-3">Tespit: <strong>@Model.Prediction</strong></h5>
+
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar @(Model.Status == "GÜVENLİ" ? "bg-success" : "bg-danger")"
+                             role="progressbar"
+                             style="width: @Model.Confidence.ToString("0")%;"
+                             aria-valuenow="@Model.Confidence" aria-valuemin="0" aria-valuemax="100">
+                            %@Model.Confidence.ToString("0.00")
+                        </div>
+                    </div>
+
+                    <p class="mb-0 fw-bold fst-italic p-2 bg-white rounded text-dark border">
+                        @Model.ActionSuggestion
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-secondary text-center shadow-sm" style="min-height: 250px; display: flex; align-items: center; justify-content: center;">
+                    <div>
+                        <h4>⏳ Sistem Hazır</h4>
+                        <p>Analiz sonucunu görmek için sol taraftan veri gönderin.</p>
+                    </div>
+                </div>
+            }
+
+            <div class="card mt-3 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom fw-bold">
+                    📜 Son 5 Analiz Geçmişi
+                </div>
+                <ul class="list-group list-group-flush">
+                    @if (ViewBag.History != null)
+                    {
+                        @foreach (var item in ViewBag.History)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-dark border">@item.Time</span>
+                                <span class="@item.ColorClass fw-bold">@item.Status</span>
+                                <span class="small text-muted text-end" style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @item.Message
+                                </span>
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item text-center text-muted small">Henüz kayıt yok.</li>
+                    }
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</div>
